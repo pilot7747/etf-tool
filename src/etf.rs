@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use color_eyre::Result;
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ETF {
@@ -13,10 +15,12 @@ pub struct ETF {
     pub launch_date: String,
     pub performance_1y: Option<f64>,
     pub performance_ytd: Option<f64>,
+    pub holdings: Vec<(String, f64)>, // (ISIN, weight in percent)
+    pub issuer: String,
 }
 
 impl ETF {
-    pub fn from_row(row: &[String]) -> Option<Self> {
+    pub fn from_row(row: &[String], issuer: String) -> Option<Self> {
         // Skip empty rows or rows that don't look like ETF data
         if row.len() < 17 || row[0].is_empty() || row[1].is_empty() || 
            row[0].starts_with("Past performance") || row[0].starts_with("©") {
@@ -35,7 +39,63 @@ impl ETF {
             launch_date: row[8].clone(),
             performance_1y: row[15].trim().replace('%', "").parse().ok(),
             performance_ytd: row[14].trim().replace('%', "").parse().ok(),
+            holdings: Vec::new(), // Initialize with empty holdings
+            issuer,
         })
+    }
+    
+    // Load holdings information based on the ETF issuer
+    pub fn load_holdings(&mut self) -> Result<()> {
+        match self.issuer.as_str() {
+            "Invesco" => self.load_invesco_holdings()?,
+            // Add other issuers here as needed
+            _ => {} // Do nothing for unsupported issuers
+        }
+        
+        Ok(())
+    }
+    
+    // Load holdings for Invesco ETFs
+    fn load_invesco_holdings(&mut self) -> Result<()> {
+        // For Invesco ETFs, we don't need to add the 'I' prefix
+        let url = format!(
+            "https://dng-api.invesco.com/cache/v1/accounts/en_GB/shareclasses/{}/holdings/index?idType=isin",
+            self.isin
+        );
+        
+        println!("Fetching holdings from URL: {}", url);
+        
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&url)
+            .header("User-Agent", "Mozilla/5.0")
+            .send()?;
+        
+        if !response.status().is_success() {
+            println!("Failed to fetch holdings for {}: HTTP status {}", self.isin, response.status());
+            return Ok(());
+        }
+        
+        let json: Value = response.json()?;
+        
+        // Extract holdings from the JSON
+        if let Some(holdings) = json.get("holdings").and_then(|h| h.as_array()) {
+            self.holdings.clear(); // Clear existing holdings
+            
+            for holding in holdings {
+                if let (Some(isin), Some(weight)) = (
+                    holding.get("isin").and_then(|i| i.as_str()),
+                    holding.get("weight").and_then(|w| w.as_f64())
+                ) {
+                    self.holdings.push((isin.to_string(), weight));
+                }
+            }
+            
+            println!("Successfully loaded {} holdings", self.holdings.len());
+        } else {
+            println!("No holdings found in the response for {}", self.isin);
+        }
+        
+        Ok(())
     }
 }
 

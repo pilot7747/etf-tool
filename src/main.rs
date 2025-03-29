@@ -6,6 +6,8 @@ mod etf;
 mod ui;
 mod utils;
 mod xtrackers;
+mod ishares;
+mod invesco;
 
 use etf::ETF;
 
@@ -16,9 +18,18 @@ struct App {
 
 impl App {
     fn new() -> Result<Self> {
-        let etfs = xtrackers::get_xtrackers_etfs()?;
+        let mut xtrackers_etfs = xtrackers::get_xtrackers_etfs()?;
+        let ishares_etfs = ishares::get_ishares_etfs()?;
+        let invesco_etfs = invesco::get_invesco_etfs()?;
+        
+        // Combine all ETF lists
+        let mut all_etfs = Vec::new();
+        all_etfs.extend(xtrackers_etfs);
+        all_etfs.extend(ishares_etfs);
+        all_etfs.extend(invesco_etfs);
+        
         Ok(Self {
-            etfs,
+            etfs: all_etfs,
             selected_index: 0,
         })
     }

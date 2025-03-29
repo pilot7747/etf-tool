@@ -3,6 +3,8 @@ use color_eyre::Result;
 use crate::etf::ETF;
 use crate::utils;
 
+const ISSUER: &str = "Xtrackers";
+
 pub fn get_xtrackers_etfs() -> Result<Vec<ETF>> {
     let file_path = "data/xtrackers_etfs.xlsx";
 
@@ -19,7 +21,7 @@ pub fn get_xtrackers_etfs() -> Result<Vec<ETF>> {
     // Process data starting from the row after headers
     let etfs: Vec<ETF> = raw_data.iter()
         .skip(header_row_index + 1)
-        .filter_map(|row| ETF::from_row(row))
+        .filter_map(|row| ETF::from_row(row, ISSUER.to_string()))
         .collect();
 
     Ok(etfs)
