@@ -19,6 +19,7 @@ fn main() -> Result<()> {
         performance_ytd: Some(8.5),
         holdings: Vec::new(),
         issuer: "Invesco".to_string(),
+        product_url: None,
     };
     
     println!("Loading holdings for {} ({})", etf.name, etf.isin);

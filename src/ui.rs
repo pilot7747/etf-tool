@@ -41,6 +41,7 @@ fn render_etf_table(frame: &mut Frame, area: Rect, etfs: &[ETF], selected_index:
 
         let perf_1y = etf.performance_1y.map_or("N/A".to_string(), |p| format!("{:.2}%", p));
         let perf_ytd = etf.performance_ytd.map_or("N/A".to_string(), |p| format!("{:.2}%", p));
+        // let url = etf.product_url.as_deref().unwrap_or("N/A");
 
         Row::new(vec![
             Cell::from(etf.name.clone()),
@@ -51,18 +52,20 @@ fn render_etf_table(frame: &mut Frame, area: Rect, etfs: &[ETF], selected_index:
             Cell::from(etf.aum.clone()),
             Cell::from(perf_1y),
             Cell::from(perf_ytd),
+            // Cell::from(url),
         ]).style(style)
     }).collect();
 
     let widths = [
-        Constraint::Percentage(25),
-        Constraint::Percentage(15),
-        Constraint::Percentage(15),
-        Constraint::Percentage(8),
-        Constraint::Percentage(8),
+        Constraint::Percentage(20),
         Constraint::Percentage(12),
-        Constraint::Percentage(8),
-        Constraint::Percentage(9),
+        Constraint::Percentage(12),
+        Constraint::Percentage(6),
+        Constraint::Percentage(6),
+        Constraint::Percentage(10),
+        Constraint::Percentage(6),
+        Constraint::Percentage(6),
+        Constraint::Percentage(22),
     ];
 
     let table = Table::new(rows, widths)

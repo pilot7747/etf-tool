@@ -1,8 +1,43 @@
 use color_eyre::Result;
 use crate::etf::ETF;
 use crate::utils;
+use reqwest::blocking::Client;
+use serde_json::Value;
 
 const ISSUER: &str = "iShares";
+
+fn fetch_ishares_product_urls() -> Result<Vec<(String, String)>> {
+    let url = "https://www.ishares.com/us/product-screener/product-screener-v3.1.jsn?dcrPath=/templatedata/config/product-screener-v3/data/en/us-ishares/ishares-product-screener-backend-config&siteEntryPassthrough=true";
+    
+    println!("Fetching product URLs from iShares API...");
+    
+    let client = Client::new();
+    let response = client.get(url)
+        .header("User-Agent", "Mozilla/5.0")
+        .send()?;
+    
+    if !response.status().is_success() {
+        return Err(color_eyre::eyre::eyre!("Failed to fetch product URLs: HTTP status {}", response.status()));
+    }
+    
+    let json: Value = response.json()?;
+    let mut product_urls = Vec::new();
+    
+    // Extract products from the JSON
+    if let Some(products) = json.get("products").and_then(|p| p.as_array()) {
+        for product in products {
+            if let (Some(isin), Some(product_url)) = (
+                product.get("isin").and_then(|i| i.as_str()),
+                product.get("productPageUrl").and_then(|u| u.as_str())
+            ) {
+                product_urls.push((isin.to_string(), product_url.to_string()));
+            }
+        }
+    }
+    
+    println!("Found {} product URLs in the API response", product_urls.len());
+    Ok(product_urls)
+}
 
 pub fn get_ishares_etfs() -> Result<Vec<ETF>> {
     let file_path = "data/iShares-UnitedKingdom.xls";
@@ -18,8 +53,12 @@ pub fn get_ishares_etfs() -> Result<Vec<ETF>> {
         .position(|row| row.get(1).map_or(false, |cell| cell == "Fund Name"))
         .unwrap_or(0);
 
+    // Fetch product URLs from the API
+    let product_urls = fetch_ishares_product_urls()?;
+    let mut url_map: std::collections::HashMap<String, String> = product_urls.into_iter().collect();
+
     // Process data starting from the row after headers
-    let etfs: Vec<ETF> = raw_data.iter()
+    let mut etfs: Vec<ETF> = raw_data.iter()
         .skip(header_row_index + 2) // Skip both header rows
         .filter_map(|row| {
             // Skip empty rows or rows that don't look like ETF data
@@ -48,9 +87,12 @@ pub fn get_ishares_etfs() -> Result<Vec<ETF>> {
                 "Unknown".to_string()
             };
 
+            let isin = row[3].clone();
+            let product_url = url_map.remove(&isin);
+
             Some(ETF {
                 name: row[1].clone(), // Fund Name
-                isin: row[3].clone(), // ISIN
+                isin, // ISIN
                 asset_class: row[2].clone(), // Fund type
                 ter,
                 currency: row[4].clone(), // Share Class Currency
@@ -62,9 +104,14 @@ pub fn get_ishares_etfs() -> Result<Vec<ETF>> {
                 performance_ytd: None, // TODO: Find the correct column for YTD performance
                 holdings: Vec::new(), // Initialize with empty holdings
                 issuer: ISSUER.to_string(),
+                product_url,
             })
         })
         .collect();
+
+    // Print statistics about URL matching
+    let matched_count = etfs.iter().filter(|etf| etf.product_url.is_some()).count();
+    println!("Matched product URLs for {}/{} iShares ETFs", matched_count, etfs.len());
 
     Ok(etfs)
 } 

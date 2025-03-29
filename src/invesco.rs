@@ -44,24 +44,24 @@ pub fn get_invesco_etfs() -> Result<Vec<ETF>> {
                 _ => "Unknown".to_string(),
             };
 
-            let row_0 = row[0].clone();
-            let row_1 = row[1].clone();
-            let row_2 = row[2].clone();
-            let row_3 = row[3].clone();
-            let row_4 = row[4].clone();
-            let row_5 = row[5].clone();
-            let row_6 = row[6].clone();
-            let row_7 = row[7].clone();
-            let row_8 = row[8].clone();
-            let row_9 = row[9].clone();
-            let row_10 = row[10].clone();
-            let row_11 = row[11].clone();
-            let row_12 = row[12].clone();
-            let row_13 = row[13].clone();
-            let row_14 = row[14].clone();
-            let row_15 = row[15].clone();
-            let row_16 = row[16].clone();
-            let row_17 = row[17].clone();
+            // let row_0 = row[0].clone();
+            // let row_1 = row[1].clone();
+            // let row_2 = row[2].clone();
+            // let row_3 = row[3].clone();
+            // let row_4 = row[4].clone();
+            // let row_5 = row[5].clone();
+            // let row_6 = row[6].clone();
+            // let row_7 = row[7].clone();
+            // let row_8 = row[8].clone();
+            // let row_9 = row[9].clone();
+            // let row_10 = row[10].clone();
+            // let row_11 = row[11].clone();
+            // let row_12 = row[12].clone();
+            // let row_13 = row[13].clone();
+            // let row_14 = row[14].clone();
+            // let row_15 = row[15].clone();
+            // let row_16 = row[16].clone();
+            // let row_17 = row[17].clone();
             
             
 
@@ -79,6 +79,7 @@ pub fn get_invesco_etfs() -> Result<Vec<ETF>> {
                 performance_ytd: None, // Not available in the file
                 holdings: Vec::new(), // Initialize with empty holdings
                 issuer: ISSUER.to_string(),
+                product_url: None, // Initialize with None
             })
         })
         .collect();

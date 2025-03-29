@@ -17,6 +17,7 @@ pub struct ETF {
     pub performance_ytd: Option<f64>,
     pub holdings: Vec<(String, f64)>, // (ISIN, weight in percent)
     pub issuer: String,
+    pub product_url: Option<String>, // URL to the product page
 }
 
 impl ETF {
@@ -41,6 +42,7 @@ impl ETF {
             performance_ytd: row[14].trim().replace('%', "").parse().ok(),
             holdings: Vec::new(), // Initialize with empty holdings
             issuer,
+            product_url: None, // Initialize with None
         })
     }
     
